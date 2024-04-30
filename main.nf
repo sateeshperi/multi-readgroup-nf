@@ -1,44 +1,14 @@
 // Variant calling pipeline, from FASTQ to BAM to gVCF
 // (no gVCF merging)
-// The sample names and FASTQ files must be given in  samplesheet.csv file
-// with header line "sample,fastq_1,fastq_2,readgroup,num_rg"
-// num_rg: number of read groups for a sample
 
-// Using Nextflow DSL 2
-
-//   Data parameters: sample sheet and reference files basename
-// can be set in the nextflow.config file
-// or in the commandline arguments
-
-// params.samplesheet = 'samplesheet.csv'
-
-ref = params.ref
-
-println "ref:  $ref"
-
-params.ref_fai = "${params.ref}.fai"
-
-//refBase = ref.baseName
-refBase = ref.take(ref.lastIndexOf('.'))
-params.ref_dict = file(refBase + '.dict')
-
-// Additional parameters for read group setting
-params.CN = 'TXG' // sequencing center
-params.PL = "ILLUMINA" // sequencing platform
 
 // ########### SOFTWARE AND CONTAINERS ############
 // gatk_docker = "public.ecr.aws/biocontainers/gatk4:4.1.9.0--py39_0"
 gatk_invoc = params.gatk_invoc          // "gatk"
-
 // picard_docker = gatk_docker // since gatk v4
 picard_invoc = params.picard_invoc     // "java -jar /usr/gitc/picard.jar "
-
 bwa_invoc = params.bwa_invoc           //    "/usr/gitc/bwa "
 samtools_invoc = params.samtools_invoc // "samtools"
-
-params.tmpdir ?= "./TMPDIR"
-
-println "TMP DIR: ${params.tmpdir} "
 
 // ############################################################### //
 // ##############   Prepare inputs ############################### //
@@ -72,49 +42,12 @@ ref_files_for_varcall = Channel.value( tuple(
                file(params.ref_dict)
                ) )
 
-// Add num_rg to CSV by grouping by sample
-process add_num_rg {
- input:
- path(input_csv)
-
- output:
- path("updated.csv") // )input_sample_ch
-
- script:
- /* ch_samples_rg = Channel.fromPath(input_csv)
-                   .splitCsv(header: true)
-                   .map { row -> tuple(
-                         row.sample,
-                         row.readgroup,
-                       file(row.fastq_1), file(row.fastq_2) ) }
- def input_sample_ch = ch_sample_rg.map {
-  sample, readgroup, fastq_1, fastq_2 ->
-  [ sample, [sample, readgroup, fastq_1, fastq_2] ]
- }.tap( bySample)
- .groupTuple()
- .map{ sample, ch_items ->
-      [sample, ch_items.size() ]
- }.combine( bySample, by: 0)
- .map{ sample, num_rg, items ->
-    (sample, readgroup, fastq_1, fastq_2) = items
-    [ sample, readgroup, fasq_1, fastq_2, num_rg ]
-  }.collectFile("updated.csv")
-  */
-  """
-
-  """
-
-}
 
 // ####################################################### //
 //                 PROCESS - ALIGN
 // ####################################################### //
 process ALIGN {
-
-  // publishDir 'bams-justAligned' //, mode: 'copy'   //, overwrite: false
-
-  //container '$params.process.container'
- container 'public.ecr.aws/p1p2i7f9/samtools-picard-bwa:v1'
+  container 'public.ecr.aws/p1p2i7f9/samtools-picard-bwa:v1'
 
  input:
  tuple path(ref), path(ref_amb), path(ref_ann), path(ref_bwt), path(ref_pac), path(ref_sa)
@@ -141,8 +74,6 @@ process ALIGN {
 // ####################################################### //
 
 process bamProcess {
- time '12h'
-
  container 'public.ecr.aws/p1p2i7f9/samtools-picard-bwa:v1'
 
  publishDir 'stats', pattern: "*.metrics", mode: 'move'
@@ -230,7 +161,6 @@ process mergeBam {
  def args = task.ext.args   ?: ''
  def files_str = input_files instanceof List ? input_files.join(" ") : input_files
  """
-
  samtools merge  --threads ${task.cpus-1} \
    ${prefix}.bam $files_str
 
@@ -251,16 +181,11 @@ process variantCall {
  // storeDir 'store-gvcf'
  publishDir "${params.outdir}/bamout/", pattern: "*bamOut.ba*", mode: 'copy'
 
- //  publishDir 'results-gvcf', mode: 'copy'
- // storeDir 'store-gvcf'
-
- // container "$gatk_docker"
  containerOptions " -v ${params.tmpdir}:/tmpdir "
 
  input:
  tuple path(ref), path(ref_fai), path(ref_dict)
  tuple val(sid), path(bam), path(bai)
-
 
  output:
  tuple val(sid), path("*.vcf.gz"), emit: gvcf
@@ -296,7 +221,7 @@ process variantCall {
          -mbq 20 \
           --showHidden true \
          -bamout ${sid}.bamOut.bam \
-       --tmp-dir tmpdir    ####  ${params.tmpdir}
+       --tmp-dir tmpdir
 
   #
   #      \$bands
