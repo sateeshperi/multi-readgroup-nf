@@ -201,6 +201,7 @@ process variantCall {
     }
 
  """
+ mkdir ./TMP
  ## for older GATK version
  ##optionalT=" -T "
 
@@ -221,7 +222,7 @@ process variantCall {
          -mbq 20 \
           --showHidden true \
          -bamout ${sid}.bamOut.bam \
-       --tmp-dir tmpdir
+       --tmp-dir ./TMP
 
   #
   #      \$bands
