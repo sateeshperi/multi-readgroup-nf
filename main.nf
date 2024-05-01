@@ -79,8 +79,6 @@ process bamProcess {
  publishDir 'stats', pattern: "*.metrics", mode: 'move'
  storeDir 'processed-bams'  // mode: 'copy'
 
- // container "${picard_docker}" // container settings in config file
-
  input:
  tuple val(sid), val(rg), val(num_rg),  path(bam)
 
@@ -180,8 +178,6 @@ process variantCall {
  publishDir "${params.outdir}/gvcf/", pattern: "*vcf*", mode: 'copy'
  // storeDir 'store-gvcf'
  publishDir "${params.outdir}/bamout/", pattern: "*bamOut.ba*", mode: 'copy'
-
- containerOptions " -v ${params.tmpdir}:/tmpdir "
 
  input:
  tuple path(ref), path(ref_fai), path(ref_dict)
