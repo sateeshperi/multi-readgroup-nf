@@ -5,7 +5,6 @@
 // ########### SOFTWARE AND CONTAINERS ############
 // gatk_docker = "public.ecr.aws/biocontainers/gatk4:4.1.9.0--py39_0"
 gatk_invoc = params.gatk_invoc          // "gatk"
-// picard_docker = gatk_docker // since gatk v4
 picard_invoc = params.picard_invoc     // "java -jar /usr/gitc/picard.jar "
 bwa_invoc = params.bwa_invoc           //    "/usr/gitc/bwa "
 samtools_invoc = params.samtools_invoc // "samtools"
@@ -85,7 +84,6 @@ process bamProcess {
  output:
  tuple val(sid), val(rg), val(num_rg),  path("${sid}.${rg}.proc.bam"), path("${sid}.${rg}.proc.bai"),  emit: proc_bam
  path "*.metrics",  emit: mkdup_metrics_file, optional: true
- //path("${sid}*.bai"), optional: true
 
  script:
  """
@@ -176,7 +174,6 @@ process variantCall {
  container 'public.ecr.aws/biocontainers/gatk4:4.1.9.0--py39_0'
 
  publishDir "${params.outdir}/gvcf/", pattern: "*vcf*", mode: 'copy'
- // storeDir 'store-gvcf'
  publishDir "${params.outdir}/bamout/", pattern: "*bamOut.ba*", mode: 'copy'
 
  input:
@@ -198,17 +195,6 @@ process variantCall {
 
  """
  mkdir ./TMP
- ## for older GATK version
- ##optionalT=" -T "
-
- bands="--gvcf-gq-bands 1 --gvcf-gq-bands 2 --gvcf-gq-bands 3 --gvcf-gq-bands 4 --gvcf-gq-bands 5 --gvcf-gq-bands 6 --gvcf-gq-bands 7 --gvcf-gq-bands 8 --gvcf-gq-bands 9 --gvcf-gq-bands 10 --gvcf-gq-bands 11 --gvcf-gq-bands 12 --gvcf-gq-bands 13 --gvcf-gq-bands 14 --gvcf-gq-bands 15 --gvcf-gq-bands 16 --gvcf-gq-bands 17 --gvcf-gq-bands 18 --gvcf-gq-bands 19 --gvcf-gq-bands 20 --gvcf-gq-bands 21 --gvcf-gq-bands 22 --gvcf-gq-bands 23 --gvcf-gq-bands 24 --gvcf-gq-bands 25 --gvcf-gq-bands 26 --gvcf-gq-bands 27 --gvcf-gq-bands 28 --gvcf-gq-bands 29 --gvcf-gq-bands 30  --gvcf-gq-bands 33 --gvcf-gq-bands 35 --gvcf-gq-bands 37  --gvcf-gq-bands 39 --gvcf-gq-bands 40 --gvcf-gq-bands 42  --gvcf-gq-bands 45 --gvcf-gq-bands 46  --gvcf-gq-bands 48  --gvcf-gq-bands 50 --gvcf-gq-bands 52  --gvcf-gq-bands 55  --gvcf-gq-bands 57  --gvcf-gq-bands 60 --gvcf-gq-bands 70 --gvcf-gq-bands 80 --gvcf-gq-bands 90 --gvcf-gq-bands 99"
-
- # consider adding --gvcf-bands
-
-
- echo "#----------- Working directory ------------#"
- pwd
- echo "#------------------------------------------#"
 
  $gatk_invoc --java-options "-Xmx${avail_mem}M -XX:-UsePerfData"  HaplotypeCaller \
          -R $ref \
@@ -219,9 +205,6 @@ process variantCall {
           --showHidden true \
          -bamout ${sid}.bamOut.bam \
        --tmp-dir ./TMP
-
-  #
-  #      \$bands
 
  """
 
@@ -265,7 +248,6 @@ workflow {
 
 
      variantCall( ref_files_for_varcall, bam_all)
-   // variantCall( ref_files_for_varcall, bamProcess.out.proc_bam )
 
  emit:
    variantCall.out.gvcf
