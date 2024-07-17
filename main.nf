@@ -13,7 +13,7 @@ samtools_invoc = params.samtools_invoc // "samtools"
 // ##############   Prepare inputs ############################### //
 // ############################################################### //
 // Parsing sample sheet, sending to channel "samples_ch"
-Channel.fromPath(params.samplesheet)
+Channel.fromPath(params.input)
   .splitCsv(header: true)
   .map { row -> tuple( row.sample
                        ,row.readgroup
